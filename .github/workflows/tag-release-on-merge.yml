@@ -1,0 +1,62 @@
+name: Tag release on merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  tag_and_release:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master' && github.event.pull_request.head.ref == 'macos-uv-setup'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine tag
+        id: vars
+        run: |
+          # Default tag for this macOS+uv setup
+          echo "tag=v1.1.10-macos-uv1" >> $GITHUB_OUTPUT
+          echo "name=macOS + uv setup (v1.1.10-macos-uv1)" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = process.env.TAG || "${{ steps.vars.outputs.tag }}";
+            const sha = context.payload.pull_request.merge_commit_sha || context.payload.pull_request.base.sha;
+            try {
+              await github.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/tags/${tag}`,
+                sha,
+              });
+              core.info(`Created tag ${tag} at ${sha}`);
+            } catch (e) {
+              if (e.status === 422 && e.message.includes('Reference already exists')) {
+                core.info(`Tag ${tag} already exists. Skipping.`);
+              } else {
+                core.setFailed(e.message);
+              }
+            }
+        env:
+          TAG: ${{ steps.vars.outputs.tag }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: ${{ steps.vars.outputs.name }}
+          body: |
+            macOS + uv setup and compatibility updates.
+            
+            - Add pyproject.toml for uv dev setup
+            - Update Homebrew include/lib paths in setup.py
+            - Temporarily disable near_dupe & dedupe C extensions for libpostal 1.1.0
+            - Add example_usage.py and test_pypostal.py
+            - README: macOS + uv quick start and notes
+            
+            Tested on macOS (Apple Silicon) with Homebrew libpostal 1.1.0.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
