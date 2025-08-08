@@ -5,6 +5,28 @@ pypostal
 
 These are the official Python bindings to https://github.com/openvenues/libpostal, a fast statistical parser/normalizer for street addresses anywhere in the world.
 
+Quick start (macOS + uv)
+------------------------
+
+This fork includes a simple development setup using uv on macOS (Apple Silicon or Intel).
+
+1. Install system deps (Homebrew):
+   - brew install curl autoconf automake libtool pkg-config libpostal
+
+2. Clone and create env:
+   - git clone https://github.com/jreakin/pypostal.git
+   - cd pypostal
+   - uv sync
+
+3. Test locally:
+   - uv run python example_usage.py
+   - uv run python test_pypostal.py
+
+Notes:
+- The build links against Homebrew's libpostal headers/libs (e.g. /opt/homebrew/include and /opt/homebrew/lib).
+- For M1/M2 (Apple Silicon), if you build libpostal from source, use --disable-sse2 in configure.
+- near_dupe and dedupe C extensions are disabled in this branch for libpostal 1.1.0 compatibility. To enable them, upgrade libpostal to a version that exports the required symbols and re-enable those extensions in setup.py.
+
 Usage
 -----
 
